@@ -1,90 +1,57 @@
 import streamlit as st
-
-# MBTI 성격별 특징 + 추천 직업
-mbti_profiles = {
-    "INTJ": {
-        "description": "🧠 전략적 사고를 가진 계획형 혁신가",
-        "jobs": ["전략 컨설턴트", "시스템 분석가", "AI 연구원", "IT 기획자"]
-    },
-    "INTP": {
-        "description": "🔍 논리와 아이디어를 사랑하는 탐구가",
-        "jobs": ["데이터 분석가", "이론 물리학자", "프로그래머", "UX 리서처"]
-    },
-    "ENTJ": {
-        "description": "💼 타고난 리더, 추진력 있는 지휘관",
-        "jobs": ["CEO", "경영 컨설턴트", "기획 관리자", "변호사"]
-    },
-    "ENTP": {
-        "description": "🌟 창의적인 아이디어 뱅크, 도전정신 가득",
-        "jobs": ["스타트업 창업가", "마케팅 기획자", "기자", "방송 PD"]
-    },
-    "INFJ": {
-        "description": "🌱 깊은 통찰력을 가진 이상주의자",
-        "jobs": ["심리상담가", "교육자", "작가", "사회운동가"]
-    },
-    "INFP": {
-        "description": "🎨 감성과 가치 중심의 예술가형",
-        "jobs": ["시인", "소설가", "그래픽 디자이너", "인권운동가"]
-    },
-    "ENFJ": {
-        "description": "🤝 사람을 이끄는 따뜻한 리더",
-        "jobs": ["교사", "HR 매니저", "연설가", "멘토"]
-    },
-    "ENFP": {
-        "description": "🌈 에너지 넘치는 낙천적 탐험가",
-        "jobs": ["홍보 담당자", "크리에이터", "방송 작가", "기획자"]
-    },
-    "ISTJ": {
-        "description": "📋 책임감 강한 현실주의자",
-        "jobs": ["행정 공무원", "회계사", "군인", "검사"]
-    },
-    "ISFJ": {
-        "description": "🛡️ 따뜻한 헌신가, 조용한 수호자",
-        "jobs": ["간호사", "사회복지사", "초등 교사", "도서관 사서"]
-    },
-    "ESTJ": {
-        "description": "📊 조직을 움직이는 관리자형",
-        "jobs": ["경찰관", "은행원", "공무원", "프로젝트 매니저"]
-    },
-    "ESFJ": {
-        "description": "🎉 모두를 챙기는 친절한 조정자",
-        "jobs": ["이벤트 플래너", "간호사", "비서", "상담 교사"]
-    },
-    "ISTP": {
-        "description": "🛠️ 실용적인 문제 해결사",
-        "jobs": ["파일럿", "기계공", "응급 구조사", "보안 전문가"]
-    },
-    "ISFP": {
-        "description": "🎨 자유로운 감성의 예술가",
-        "jobs": ["플로리스트", "패션 디자이너", "요리사", "사진작가"]
-    },
-    "ESTP": {
-        "description": "🏃‍♂️ 액션과 스릴을 사랑하는 도전가",
-        "jobs": ["기업가", "스포츠 트레이너", "영업 전문가", "구조대원"]
-    },
-    "ESFP": {
-        "description": "🎤 무대를 사랑하는 분위기 메이커",
-        "jobs": ["배우", "MC", "공연 기획자", "여행 가이드"]
-    }
-}
-
-# 페이지 설정
-st.set_page_config(page_title="MBTI 직업 추천기", page_icon="🧭")
+import pandas as pd
 
 # 제목
-st.title("🧭 MBTI 기반 직업 추천 사이트")
-st.markdown("당신의 MBTI에 맞는 성향과 어울리는 **직업**을 추천해드릴게요! 😄")
+st.title("2025년 5월 기준 연령별 인구 현황 분석")
 
-# MBTI 선택
-selected_mbti = st.selectbox("👇 당신의 MBTI를 선택하세요", list(mbti_profiles.keys()))
+# CSV 파일 읽기
+file_path = "202505_202505_연령별인구현황_월간.csv"
+df = pd.read_csv(file_path, encoding='euc-kr')
 
-# 추천 버튼
-if st.button("🎯 추천 직업 보기"):
-    profile = mbti_profiles[selected_mbti]
-    st.success(f"✨ {selected_mbti} - {profile['description']}")
-    st.markdown("**추천 직업 리스트:**")
-    for job in profile["jobs"]:
-        st.write(f"💼 {job}")
-    
-    # 풍선 효과
-    st.balloons()
+# 원본 데이터 표시
+st.subheader("원본 데이터")
+st.dataframe(df)
+
+# 필요한 열 추출 및 전처리
+df = df.rename(columns=lambda x: x.strip())  # 공백 제거
+cols = df.columns
+
+# '2025년05월_계_'로 시작하는 열만 선택 + '총인구수'
+age_cols = [col for col in cols if col.startswith("2025년05월_계_")]
+total_col = "2025년05월_계_총인구수"
+
+# 연령 숫자만 추출하여 새로운 컬럼명 생성
+age_map = {}
+for col in age_cols:
+    if col == total_col:
+        age_map[col] = "총인구수"
+    else:
+        age_str = col.replace("2025년05월_계_", "")
+        age_map[col] = age_str
+
+# 컬럼명 변경
+df = df[["행정기관"] + age_cols]
+df = df.rename(columns=age_map)
+
+# 총인구수 기준 상위 5개 행정구역 추출
+top5 = df.sort_values(by="총인구수", ascending=False).head(5)
+
+# 총인구수 제외한 연령 데이터만 선택
+age_only_cols = [col for col in top5.columns if col not in ["행정기관", "총인구수"]]
+
+# 정수형으로 변환
+top5[age_only_cols] = top5[age_only_cols].apply(pd.to_numeric, errors='coerce')
+
+# 연령별 인구 데이터: index=연령, columns=행정기관 형태로 변환
+top5_age = top5.set_index("행정기관")[age_only_cols].T
+top5_age.index.name = "연령"
+
+# 시각화
+st.subheader("상위 5개 행정구역의 연령별 인구 분포")
+st.line_chart(top5_age)
+
+# 부가 설명
+st.markdown("""
+- 본 그래프는 2025년 5월 기준, 총인구수가 많은 상위 5개 행정기관의 연령별 인구를 선 그래프로 표현한 것입니다.
+- 데이터 출처: 통계청 월간 인구 동향
+""")
